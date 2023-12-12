@@ -1,7 +1,7 @@
 import { Inject, Controller, Get } from '@midwayjs/core';
 import { Context } from '@midwayjs/koa';
 import { UserService } from '../service/user.service';
-import {CaptchaService} from "../service/captcha.service";
+import { CaptchaService } from '../service/captcha.service';
 
 @Controller('/captcha')
 export class APIController {
@@ -16,7 +16,7 @@ export class APIController {
 
   @Get('/get')
   async getUser() {
-    const res = await this.captchaService.get() ;
+    const res = await this.captchaService.get();
     return { success: true, message: 'OK', data: res };
   }
 }

@@ -102,8 +102,10 @@ export function drawPuzzle(
 
   margin = margin <= 0 ? 0 : margin;
 
-  if (typeof points === 'number' || !points) {
+  if (typeof points === 'number') {
     points = getRandomPoints(points);
+  } else if (!points) {
+    points = getRandomPoints();
   }
 
   const r = (Math.min(w, h) - margin * 2) * 0.15; // 适合拼图点的比例 0.15

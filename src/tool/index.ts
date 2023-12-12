@@ -1,13 +1,7 @@
 import * as PImage from 'pureimage';
-import {PassThrough, Writable as WriteStream} from 'stream';
 import sizeOf from 'image-size';
 import { getBuffer, bufferToStream } from 'node-useful';
 import { drawPuzzle, getRandomPoints, getRandomInt } from './util';
-
-type Output = {
-  bg: WriteStream;
-  puzzle: WriteStream;
-};
 
 type Options = {
   // 拼图
@@ -32,11 +26,7 @@ type Options = {
   pngOptions?: Parameters<typeof PImage.encodePNGToStream>[2]; // 导出 png 图片配置，仅作用于 `png` 图片。
 };
 
-async function createPuzzle(
-  input: string | Buffer,
-  output: Output,
-  options: Options = {}
-) {
+async function createPuzzle(input: string | Buffer, options: Options = {}) {
   const {
     // 拼图
     borderWidth = 1,
@@ -56,8 +46,6 @@ async function createPuzzle(
 
     // 导出配置
     bgImageType = 'jpeg',
-    quality = 80,
-    pngOptions,
   } = options;
 
   const buffer = await getBuffer(input);
@@ -155,21 +143,36 @@ async function createPuzzle(
   ctx.drawImage(maskCanvas, x, y, width, height);
 
   const bgImageTypeIsPng = bgImageType === 'png';
-  const bgEncodeMethod = bgImageTypeIsPng
-    ? PImage.encodePNGToStream
-    : PImage.encodeJPEGToStream;
-  const bgQualityOptions = bgImageTypeIsPng ? pngOptions : quality;
+  const puzzleBuffer = await encodePNGToBuffer(puzzle);
+  let bgBuffer;
+  if (bgImageTypeIsPng) {
+    bgBuffer = await encodePNGToBuffer(img);
+  } else {
+    bgBuffer = await encodeJPEGToBuffer(img);
+  }
+  return {
+    puzzeStr: puzzleBuffer.toString('base64'),
+    bgBufferStr: bgBuffer.toString('base64'),
+    x,
+  };
+}
 
-  return Promise.all([
-    PImage.encodePNGToStream(puzzle, output.puzzle, pngOptions),
-    // @ts-ignore
-    bgEncodeMethod(img, output.bg, bgQualityOptions),
-  ]).then(() => {
-    return {
-      x,
-      y: equalHeight ? 0 : y,
-    };
-  });
+async function encodePNGToBuffer(canvas) {
+  return encodeAndStreamIntoBuffer(PImage.encodePNGToStream, canvas);
+}
+
+async function encodeJPEGToBuffer(canvas) {
+  return encodeAndStreamIntoBuffer(PImage.encodeJPEGToStream, canvas);
+}
+
+async function encodeAndStreamIntoBuffer(encodeDataToStream, canvas) {
+  const PassThrough = require('stream').PassThrough;
+  const passThroughStream = new PassThrough();
+  const pngData = [];
+  passThroughStream.on('data', chunk => pngData.push(chunk));
+  passThroughStream.on('end', () => {});
+  await encodeDataToStream(canvas, passThroughStream);
+  return Buffer.concat(pngData);
 }
 
 export default createPuzzle;
