@@ -15,8 +15,14 @@ export class APIController {
   captchaService: CaptchaService;
 
   @Get('/get')
-  async getUser() {
+  async get() {
     const res = await this.captchaService.get();
+    return { success: true, message: 'OK', data: res };
+  }
+
+  @Get('/check')
+  async check() {
+    const res = await this.captchaService.check();
     return { success: true, message: 'OK', data: res };
   }
 }
